@@ -39,3 +39,4 @@ htmlcov/
 
 # User config (don't commit credentials)
 .iq/
+.claude

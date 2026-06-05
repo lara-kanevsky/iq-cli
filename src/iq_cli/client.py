@@ -262,6 +262,184 @@ class IquallClient:
 
         return self._make_graphql_request(query, variables, environment=env)
 
+    def get_jobs_with_filter(self,
+                             first: int = 10,
+                             instance_id: Optional[str] = None,
+                             app_id: Optional[str] = None,
+                             order_by: str = "desc",
+                             before: Optional[str] = None,
+                             after: Optional[str] = None,
+                             environment: Optional[str] = None) -> Dict[str, Any]:
+        """Get jobs with filters and pagination."""
+        query = """
+        query getJobsWithFilter($filter: inputJobFilter, $first: Int!, $orderBy: inputJobSort, $before: ID, $after: ID, $environment: Environment!) {
+            jobs(
+                environment: $environment
+                filter: $filter
+                first: $first
+                orderBy: $orderBy
+                before: $before
+                after: $after
+            ) {
+                totalCount
+                pageInfo {
+                    endCursor
+                    hasNextPage
+                    startCursor
+                    hasPreviousPage
+                    __typename
+                }
+                edges {
+                    dry_run
+                    instance {
+                        team {
+                            name
+                            __typename
+                        }
+                        __typename
+                    }
+                    status {
+                        stage
+                        code
+                        type
+                        category
+                        icon
+                        label {
+                            EN
+                            ES
+                            __typename
+                        }
+                        message
+                        __typename
+                    }
+                    ... on NetworkTaskJob {
+                        duration
+                        job_id
+                        app_id
+                        state
+                        execution_date
+                        started_date
+                        job_name
+                        instance_id
+                        final_status {
+                            code
+                            label
+                            type
+                            __typename
+                        }
+                        instance {
+                            info {
+                                name
+                                __typename
+                            }
+                            use_case {
+                                id
+                                __typename
+                            }
+                            __typename
+                        }
+                        trigger {
+                            ... on ManualTrigger {
+                                source
+                                launcher {
+                                    name
+                                    __typename
+                                }
+                                __typename
+                            }
+                            ... on OrchestrationTrigger {
+                                source
+                                job_launcher {
+                                    job_id
+                                    job_name
+                                    instance_id
+                                    app_id
+                                    __typename
+                                }
+                                launcher {
+                                    name
+                                    __typename
+                                }
+                                __typename
+                            }
+                            ... on JobTrigger {
+                                source
+                                job_launcher {
+                                    job_id
+                                    job_name
+                                    instance_id
+                                    app_id
+                                    __typename
+                                }
+                                launcher {
+                                    name
+                                    __typename
+                                }
+                                __typename
+                            }
+                            ... on HTTPEndpointTrigger {
+                                source
+                                endpoint_launcher
+                                __typename
+                            }
+                            ... on UnitTestTrigger {
+                                source
+                                launcher {
+                                    name
+                                    id
+                                    __typename
+                                }
+                                __typename
+                            }
+                            ... on NetworkConfigEventTrigger {
+                                params
+                                source
+                                ncm_event_launcher {
+                                    ncm_id
+                                    ncm_event_id
+                                    __typename
+                                }
+                                __typename
+                            }
+                            ... on ContinuousSchedule {
+                                source
+                                __typename
+                            }
+                        }
+                        __typename
+                    }
+                }
+            }
+        }
+        """
+
+        env = environment or config.default_environment
+
+        # Build filter object
+        filter_obj = {}
+        if instance_id:
+            filter_obj["instance_id"] = {"eq": instance_id}
+        if app_id:
+            filter_obj["app_id"] = {"eq": app_id}
+
+        # Build orderBy object
+        order_by_obj = {"execution_date": order_by}
+
+        variables = {
+            "environment": env,
+            "first": first,
+            "orderBy": order_by_obj,
+            "filter": filter_obj if filter_obj else None
+        }
+
+        # Add optional pagination parameters
+        if before:
+            variables["before"] = before
+        if after:
+            variables["after"] = after
+
+        return self._make_graphql_request(query, variables, environment=env)
+
 
 # Global client instance
 client = IquallClient()

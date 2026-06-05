@@ -125,6 +125,34 @@ def get_job(
         raise typer.Exit(1)
 
 
+@get_app.command("jobs")
+def get_jobs(
+    instance_id: Annotated[Optional[str], typer.Option("--instance-id", "-i", help="Filter by instance ID")] = None,
+    app_id: Annotated[Optional[str], typer.Option("--app-id", "-a", help="Filter by app ID")] = None,
+    first: Annotated[int, typer.Option("--first", "-n", help="Number of jobs to return")] = 10,
+    order: Annotated[str, typer.Option("--order", help="Sort order for execution_date (asc/desc)")] = "desc",
+    after: Annotated[Optional[str], typer.Option("--after", help="Cursor for pagination (after)")] = None,
+    before: Annotated[Optional[str], typer.Option("--before", help="Cursor for pagination (before)")] = None,
+    environment: Annotated[Optional[str], typer.Option("--environment", "-e", help="Environment name")] = None,
+    output: Annotated[str, typer.Option("--output", "-o", help="Output format (table, json, yaml)")] = "table",
+):
+    """Get list of jobs with optional filters."""
+    try:
+        result = client.get_jobs_with_filter(
+            first=first,
+            instance_id=instance_id,
+            app_id=app_id,
+            order_by=order,
+            before=before,
+            after=after,
+            environment=environment
+        )
+        format_output(result, output, "Jobs")
+    except Exception as e:
+        print_error(f"Failed to get jobs: {e}")
+        raise typer.Exit(1)
+
+
 # Create commands
 @create_app.command("sandbox")
 def create_sandbox(
