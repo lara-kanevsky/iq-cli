@@ -1,5 +1,6 @@
 """Main CLI application for iq."""
 
+import json
 import typer
 from typing import Optional
 from typing_extensions import Annotated
@@ -24,12 +25,14 @@ app = typer.Typer(
 # Create subcommands
 get_app = typer.Typer(help="Get resources from iquall")
 create_app = typer.Typer(help="Create resources in iquall")
+update_app = typer.Typer(help="Update resources in iquall")
 delete_app = typer.Typer(help="Delete resources from iquall")
 run_app = typer.Typer(help="Run jobs in iquall")
 config_app = typer.Typer(help="Configure iq CLI")
 
 app.add_typer(get_app, name="get")
 app.add_typer(create_app, name="create")
+app.add_typer(update_app, name="update")
 app.add_typer(delete_app, name="delete")
 app.add_typer(run_app, name="run")
 app.add_typer(config_app, name="config")
@@ -129,7 +132,7 @@ def get_job(
 def get_jobs(
     instance_id: Annotated[Optional[str], typer.Option("--instance-id", "-i", help="Filter by instance ID")] = None,
     app_id: Annotated[Optional[str], typer.Option("--app-id", "-a", help="Filter by app ID")] = None,
-    first: Annotated[int, typer.Option("--first", "-n", help="Number of jobs to return")] = 10,
+    first: Annotated[int, typer.Option("--first", "-n", help="Number of jobs to return")] = 100,
     order: Annotated[str, typer.Option("--order", help="Sort order for execution_date (asc/desc)")] = "desc",
     after: Annotated[Optional[str], typer.Option("--after", help="Cursor for pagination (after)")] = None,
     before: Annotated[Optional[str], typer.Option("--before", help="Cursor for pagination (before)")] = None,
@@ -200,6 +203,45 @@ def create_network_task(
         print_success(f"Network task '{name}' created successfully!")
     except Exception as e:
         print_error(f"Failed to create network task: {e}")
+        raise typer.Exit(1)
+
+
+# Update commands
+@update_app.command("network-task")
+def update_network_task(
+    instance_id: Annotated[str, typer.Argument(help="Network task instance ID")],
+    network_status: Annotated[Optional[str], typer.Option("--network-status", help="Network status config as JSON string")] = None,
+    max_jobs_queued: Annotated[Optional[int], typer.Option("--max-jobs-queued", help="Maximum jobs queued")] = None,
+    concurrence: Annotated[Optional[int], typer.Option("--concurrence", help="Concurrence limit")] = None,
+    queue_policy: Annotated[Optional[str], typer.Option("--queue-policy", help="Queue policy config as JSON string")] = None,
+    alarm_policy: Annotated[Optional[str], typer.Option("--alarm-policy", help="Alarm policy config as JSON string")] = None,
+    environment: Annotated[Optional[str], typer.Option("--environment", "-e", help="Environment name")] = None,
+    output: Annotated[str, typer.Option("--output", "-o", help="Output format (table, json, yaml)")] = "table",
+):
+    """Update network task configuration."""
+    try:
+        # Parse JSON strings if provided
+        network_status_dict = json.loads(network_status) if network_status else None
+        queue_policy_dict = json.loads(queue_policy) if queue_policy else None
+        alarm_policy_dict = json.loads(alarm_policy) if alarm_policy else None
+
+        print_info(f"Updating network task '{instance_id}'...")
+        result = client.update_network_task(
+            instance_id=instance_id,
+            network_status=network_status_dict,
+            max_jobs_queued=max_jobs_queued,
+            concurrence=concurrence,
+            queue_policy=queue_policy_dict,
+            alarm_policy=alarm_policy_dict,
+            environment=environment
+        )
+        format_output(result, output, f"Updated Network Task: {instance_id}")
+        print_success(f"Network task '{instance_id}' updated successfully!")
+    except json.JSONDecodeError as e:
+        print_error(f"Invalid JSON format: {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        print_error(f"Failed to update network task: {e}")
         raise typer.Exit(1)
 
 

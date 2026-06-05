@@ -208,6 +208,78 @@ class IquallClient:
 
         return self._make_graphql_request(query, variables, environment=environment)
 
+    def update_network_task(self,
+                           instance_id: str,
+                           network_status: Optional[Dict] = None,
+                           max_jobs_queued: Optional[int] = None,
+                           concurrence: Optional[int] = None,
+                           queue_policy: Optional[Dict] = None,
+                           alarm_policy: Optional[Dict] = None,
+                           environment: Optional[str] = None) -> Dict[str, Any]:
+        """Update network task configuration."""
+        query = """
+        mutation updateNetworkStatusTask($instance_id: ID!, $input: inputNetworkTask!) {
+            updateNetworkTask(instance_id: $instance_id, input: $input) {
+                ... on NetworkTask {
+                    max_jobs_queued
+                    concurrence {
+                        limit
+                        __typename
+                    }
+                    network_status {
+                        global_freeze_activated
+                        global_freeze_deactivated
+                        global_maintenance_activated
+                        global_maintenance_deactivated
+                        host_freeze_activated
+                        host_freeze_deactivated
+                        host_maintenance_activated
+                        host_maintenance_deactivated
+                        __typename
+                    }
+                    queue_policy {
+                        add_on_freeze
+                        add_on_maintenance
+                        __typename
+                    }
+                    alarm_policy {
+                        on_success
+                        key_format
+                        timeout
+                        __typename
+                    }
+                    __typename
+                }
+                __typename
+            }
+        }
+        """
+
+        # Build input object dynamically based on provided parameters
+        input_obj = {}
+
+        if network_status:
+            input_obj["network_status"] = network_status
+
+        if max_jobs_queued is not None:
+            input_obj["max_jobs_queued"] = max_jobs_queued
+
+        if concurrence is not None:
+            input_obj["concurrence"] = concurrence
+
+        if queue_policy:
+            input_obj["queue_policy"] = queue_policy
+
+        if alarm_policy:
+            input_obj["alarm_policy"] = alarm_policy
+
+        variables = {
+            "instance_id": instance_id,
+            "input": input_obj
+        }
+
+        return self._make_graphql_request(query, variables, environment=environment)
+
     def run_job(self, instance_id: str, name: str, params: Optional[Dict] = None, environment: Optional[str] = None) -> Dict[str, Any]:
         """Run a job."""
         query = """
