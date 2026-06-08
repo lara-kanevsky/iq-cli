@@ -27,6 +27,7 @@ get_app = typer.Typer(help="Get resources from iquall")
 create_app = typer.Typer(help="Create resources in iquall")
 update_app = typer.Typer(help="Update resources in iquall")
 delete_app = typer.Typer(help="Delete resources from iquall")
+stop_app = typer.Typer(help="Stop resources in iquall")
 run_app = typer.Typer(help="Run jobs in iquall")
 config_app = typer.Typer(help="Configure iq CLI")
 
@@ -34,6 +35,7 @@ app.add_typer(get_app, name="get")
 app.add_typer(create_app, name="create")
 app.add_typer(update_app, name="update")
 app.add_typer(delete_app, name="delete")
+app.add_typer(stop_app, name="stop")
 app.add_typer(run_app, name="run")
 app.add_typer(config_app, name="config")
 
@@ -264,6 +266,31 @@ def delete_sandbox(
         print_success(f"Sandbox '{sandbox_id}' deleted successfully!")
     except Exception as e:
         print_error(f"Failed to delete sandbox: {e}")
+        raise typer.Exit(1)
+
+
+# Stop commands
+@stop_app.command("sandbox")
+def stop_sandbox(
+    sandbox_id: Annotated[str, typer.Argument(help="Sandbox ID to stop")],
+    yes: Annotated[bool, typer.Option("--yes", "-y", help="Skip confirmation")] = False,
+    output: Annotated[str, typer.Option("--output", "-o", help="Output format (table, json, yaml)")] = "table",
+):
+    """Stop a running sandbox."""
+    if not yes:
+        confirm = typer.confirm(f"Are you sure you want to stop sandbox '{sandbox_id}'?")
+        if not confirm:
+            print_warning("Operation cancelled.")
+            raise typer.Exit(0)
+
+    try:
+        print_info(f"Stopping sandbox '{sandbox_id}'...")
+        result = client.stop_sandbox(sandbox_id)
+        print_success(f"Sandbox '{sandbox_id}' stopped successfully!")
+        if output != "table":
+            format_output({"status": "stopped", "sandbox_id": sandbox_id}, output, "Stop Sandbox")
+    except Exception as e:
+        print_error(f"Failed to stop sandbox: {e}")
         raise typer.Exit(1)
 
 

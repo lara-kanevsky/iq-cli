@@ -139,6 +139,17 @@ class IquallClient:
 
         return self._make_graphql_request(query, variables)
 
+    def stop_sandbox(self, sandbox_id: str) -> Dict[str, Any]:
+        """Stop a sandbox."""
+        query = """
+        mutation stopSandbox($id: ID!) {
+            stopSandbox(sandbox_id: $id)
+        }
+        """
+        variables = {"id": sandbox_id}
+
+        return self._make_graphql_request(query, variables)
+
     def get_deployment(self, environment: Optional[str] = None) -> Dict[str, Any]:
         """Get deployment information."""
         query = """
